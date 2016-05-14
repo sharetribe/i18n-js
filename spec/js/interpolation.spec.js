@@ -110,4 +110,20 @@ describe("Interpolation", function(){
     expect(actual).toEqual("Hello [missing-placeholder-debug]!");
     I18n.missingPlaceholder = orig;
   });
+
+  it("splits the string if interpolationMode is 'split'", function() {
+    var orig = I18n.interpolationMode;
+    I18n.interpolationMode = 'split';
+    actual = I18n.t("profile.details", {name: "John Doe", age: 30});
+    expect(actual).toEqual(["John Doe", " is ", 30, "-years old"]);
+    I18n.interpolationMode = orig;
+  });
+
+  it("skips toString if interpolationMode is 'split'", function() {
+    var orig = I18n.interpolationMode;
+    I18n.interpolationMode = 'split';
+    actual = I18n.t("greetings.name", {name: {first: "John", last: "Doe"}});
+    expect(actual).toEqual(["Hello ", {first: "John", last: "Doe"}, "!"]);
+    I18n.interpolationMode = orig;
+  });
 });

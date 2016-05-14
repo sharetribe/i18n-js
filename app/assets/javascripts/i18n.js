@@ -141,6 +141,9 @@
     // string is actually missing for testing purposes, you can prefix the
     // guessed string by setting the value here. By default, no prefix!
     , missingTranslationPrefix: ''
+
+    // 'inline' or 'split'
+    , interpolationMode: 'inline'
   };
 
   I18n.reset = function() {
@@ -170,6 +173,8 @@
     // Set the default missing string prefix for guess behaviour
     this.missingTranslationPrefix = DEFAULT_OPTIONS.missingTranslationPrefix;
 
+    // Set the default interpolation behaviour
+    this.interpolationMode = DEFAULT_OPTIONS.interpolationMode;
   };
 
   // Much like `reset`, but only assign options if not already assigned
@@ -191,12 +196,15 @@
 
     if (typeof(this.translations) === "undefined" && this.translations !== null)
       this.translations = DEFAULT_OPTIONS.translations;
-      
+
     if (typeof(this.missingBehaviour) === "undefined" && this.missingBehaviour !== null)
       this.missingBehaviour = DEFAULT_OPTIONS.missingBehaviour;
 
     if (typeof(this.missingTranslationPrefix) === "undefined" && this.missingTranslationPrefix !== null)
       this.missingTranslationPrefix = DEFAULT_OPTIONS.missingTranslationPrefix;
+
+    if (typeof(this.interpolationMode) === "undefined" && this.interpolationMode !== null)
+      this.interpolationMode = DEFAULT_OPTIONS.interpolationMode;
   };
   I18n.initializeOptions();
 
@@ -464,6 +472,16 @@
 
   // This function interpolates the all variables in the given message.
   I18n.interpolate = function(message, options) {
+    // This function is behaving badly: It's modifying the params
+    var fill = function(xs, value) {
+      var first = xs.shift();
+      var rest = xs;
+
+      return rest.reduce(function(memo, x) {
+        return memo.concat([value, x]);
+      }, [first]);
+    };
+
     options = this.prepareOptions(options);
     var matches = message.match(this.placeholder)
       , placeholder
@@ -483,7 +501,11 @@
       name = placeholder.replace(this.placeholder, "$1");
 
       if (this.isSet(options[name])) {
-        value = options[name].toString().replace(/\$/gm, "_#$#_");
+        if (this.interpolationMode === 'split') {
+          value = options[name];
+        } else {
+          value = options[name].toString().replace(/\$/gm, "_#$#_");
+        }
       } else if (name in options) {
         value = this.nullPlaceholder(placeholder, message, options);
       } else {
@@ -491,10 +513,29 @@
       }
 
       regex = new RegExp(placeholder.replace(/\{/gm, "\\{").replace(/\}/gm, "\\}"));
-      message = message.replace(regex, value);
+
+      if (this.interpolationMode === 'split') {
+        message = isArray(message) ? message : [message];
+
+        message = message.reduce(function(memo, x) {
+          if (x === "") {
+            return memo;
+          } else if (typeof x !== "string") {
+            return memo.concat([x]);
+          } else {
+            return memo.concat(fill(x.split(regex), value));
+          }
+        }, []);
+      } else {
+        message = message.replace(regex, value);
+      }
     }
 
-    return message.replace(/_#\$#_/g, "$");
+    if (this.interpolationMode === 'split') {
+      return message;
+    } else {
+      return message.replace(/_#\$#_/g, "$");
+    }
   };
 
   // Pluralize the given scope using the `count` value.
