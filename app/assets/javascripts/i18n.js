@@ -509,7 +509,19 @@
 
         message = message.reduce(function(memo, x) {
           if (typeof x === "string") {
-            return memo.concat(this.trimArray("", this.interleaveValue(value, x.split(regex))));
+            // 1. Splits the string by placeholder
+            // 2. Interleaves the give value to the array
+            // 3. Trims the array
+            //
+            // E.g. when x = "hello {{name}}" and value = "John":
+            //
+            // 1. Split:      "hello {{name}}" => ["hello ", ""]
+            // 2. Interleave: ["hello ", ""] => ["hello ", "John", ""]
+            // 3. Trim:       ["hello ", "John", ""] => ["hello ", "John"]
+            //
+            var interpolated = this.trimArray("", this.interleaveValue(value, x.split(regex)));
+
+            return memo.concat(interpolated);
           } else {
             return memo.concat([x]);
           }
