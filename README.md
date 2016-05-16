@@ -367,7 +367,7 @@ You might need to use the `split` if you need to inject HTML elements in the tra
 // click_here_link: "here"
 
 I18n.interpolationMode = "split";
-I18n.t("click_here_to_read_more", {link: a(href: "www.google.com", t("click_here_link"))})
+I18n.t("click_here_to_read_more", {link: a({href: "www.google.com"}, t("click_here_link"))})
   // => ["Click " [object Object], " to read more!"]
 ```
 
