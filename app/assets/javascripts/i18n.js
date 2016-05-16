@@ -508,10 +508,10 @@
         message = isArray(message) ? message : [message];
 
         message = message.reduce(function(memo, x) {
-          if (typeof x !== "string") {
-            return memo.concat([x]);
-          } else {
+          if (typeof x === "string") {
             return memo.concat(this.trimArray("", this.interleaveValue(value, x.split(regex))));
+          } else {
+            return memo.concat([x]);
           }
         }.bind(this), []);
       } else {

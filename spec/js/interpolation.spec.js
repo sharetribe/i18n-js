@@ -137,5 +137,14 @@ describe("Interpolation", function(){
       actual = I18n.t("paid", {price: "$500"});
       expect(actual).toEqual(["You were paid ", "$500"]);
     });
+
+    it("handles nested interpolations, does not flatten", function() {
+      actual = I18n.t("click_here.sentence", {
+        important: I18n.t("click_here.important", {
+          link: I18n.t("click_here.link", {this_uc: I18n.t("click_here.this_uc")})})
+      });
+
+      expect(actual).toEqual(["Click ", [["THIS", " link"], " to see more!"]]);
+    });
   });
 });

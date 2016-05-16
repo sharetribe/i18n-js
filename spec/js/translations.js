@@ -35,6 +35,12 @@ var DEBUG = false;
           , other: "You have {{count}} new messages ({{unread}} unread)"
           , zero: "You have no new messages ({{unread}} unread)"
         }
+      , click_here: {
+          sentence: "Click {{important}}"
+        , important: "{{link}} to see more!"
+        , link: "{{this_uc}} link"
+        , this_uc: "THIS"
+      }
 
       , number: {
           human: {
