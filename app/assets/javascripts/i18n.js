@@ -472,16 +472,6 @@
 
   // This function interpolates the all variables in the given message.
   I18n.interpolate = function(message, options) {
-    // This function is behaving badly: It's modifying the params
-    var fill = function(xs, value) {
-      var first = xs.shift();
-      var rest = xs;
-
-      return rest.reduce(function(memo, x) {
-        return memo.concat([value, x]);
-      }, [first]);
-    };
-
     options = this.prepareOptions(options);
     var matches = message.match(this.placeholder)
       , placeholder
@@ -523,9 +513,9 @@
           } else if (typeof x !== "string") {
             return memo.concat([x]);
           } else {
-            return memo.concat(fill(x.split(regex), value));
+            return memo.concat(this.interleaveValue(value, x.split(regex)));
           }
-        }, []);
+        }.bind(this), []);
       } else {
         message = message.replace(regex, value);
       }
@@ -974,6 +964,29 @@
       }
     }
     return extended;
+  };
+
+  // Takes an array and adds the given value between each element.
+  //
+  // Examples:
+  // interleaveValue("a", []) => []
+  // interleaveValue("a", [1]) => [1]
+  // interleaveValue("a", [1, 2]) => [1, "a", 2]
+  // interleaveValue("a", [1, 2, 3]) => [1, "a", 2, "a", 3]
+  //
+  // This function is not part of the public API
+  //
+  I18n.interleaveValue = function ( value, arr ) {
+    var first = arr.slice(0, 1); // first element in an array, or empty array
+    var rest = arr.slice(1); // rest in an array
+
+    if (rest.length) {
+      return rest.reduce(function(xs, x) {
+        return xs.concat([value, x]);
+      }, first);
+    } else {
+      return first;
+    }
   };
 
   // Set aliases, so we can save some typing.
