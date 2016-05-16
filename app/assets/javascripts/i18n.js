@@ -508,12 +508,10 @@
         message = isArray(message) ? message : [message];
 
         message = message.reduce(function(memo, x) {
-          if (x === "") {
-            return memo;
-          } else if (typeof x !== "string") {
+          if (typeof x !== "string") {
             return memo.concat([x]);
           } else {
-            return memo.concat(this.interleaveValue(value, x.split(regex)));
+            return memo.concat(this.trimArray("", this.interleaveValue(value, x.split(regex))));
           }
         }.bind(this), []);
       } else {
@@ -986,6 +984,24 @@
       }, first);
     } else {
       return first;
+    }
+  };
+
+  // Trims array, i.e. removes unwanted value from the beginning and end
+  //
+  // Example:
+  // var splitted = "My name is ${name}".split("${name}"); => ["My name is ", ""];
+  // I18n.trimArray("", splitted); => ["My name is "];
+  I18n.trimArray = function ( unwantedValue, arr ) {
+    if (arr.length === 0) {
+      return arr;
+    } else if (arr.length === 1) {
+      return (arr[0] === unwantedValue) ? arr.slice(1) : arr.slice();
+    } else {
+      var start = (arr[0] === unwantedValue) ? 1 : 0;
+      var end = (arr[arr.length - 1] === unwantedValue) ? -1 : undefined;
+
+      return arr.slice(start, end);
     }
   };
 

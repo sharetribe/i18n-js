@@ -25,4 +25,19 @@ describe("Utility Functions", function(){
       expect(I18n.interleaveValue("a", [1, 2, 3])).toEqual([1, "a", 2, "a", 3]);
     });
   });
+
+  describe("I18n.trimArray", function() {
+    it("removes the unwanted values from the array beginning and end", function() {
+      expect(I18n.trimArray("", [])).toEqual([]);
+      expect(I18n.trimArray("", [1])).toEqual([1]);
+      expect(I18n.trimArray("", [1, 2])).toEqual([1, 2]);
+      expect(I18n.trimArray("", [1, 2, 3])).toEqual([1, 2, 3]);
+      expect(I18n.trimArray("", [""])).toEqual([]);
+      expect(I18n.trimArray("", ["", 1])).toEqual([1]);
+      expect(I18n.trimArray("", [1, ""])).toEqual([1]);
+      expect(I18n.trimArray("", ["", 1, 2])).toEqual([1, 2]);
+      expect(I18n.trimArray("", [1, 2, ""])).toEqual([1, 2]);
+      expect(I18n.trimArray("", [1, "", 2])).toEqual([1, "", 2]);
+    });
+  });
 });

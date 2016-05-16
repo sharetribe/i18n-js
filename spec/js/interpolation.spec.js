@@ -111,19 +111,31 @@ describe("Interpolation", function(){
     I18n.missingPlaceholder = orig;
   });
 
-  it("splits the string if interpolationMode is 'split'", function() {
-    var orig = I18n.interpolationMode;
-    I18n.interpolationMode = 'split';
-    actual = I18n.t("profile.details", {name: "John Doe", age: 30});
-    expect(actual).toEqual(["John Doe", " is ", 30, "-years old"]);
-    I18n.interpolationMode = orig;
-  });
+  describe("interpolationMode split", function() {
+    var origInterpolationMode;
 
-  it("skips toString if interpolationMode is 'split'", function() {
-    var orig = I18n.interpolationMode;
-    I18n.interpolationMode = 'split';
-    actual = I18n.t("greetings.name", {name: {first: "John", last: "Doe"}});
-    expect(actual).toEqual(["Hello ", {first: "John", last: "Doe"}, "!"]);
-    I18n.interpolationMode = orig;
+    beforeEach(function() {
+      var origInterpolationMode = I18n.interpolationMode;
+      I18n.interpolationMode = 'split';
+    });
+
+    afterEach(function() {
+      I18n.interpolationMode = origInterpolationMode;
+    });
+
+    it("splits the string by placeholders", function() {
+      actual = I18n.t("greetings.name", {name: "John Doe"});
+      expect(actual).toEqual(["Hello ", "John Doe", "!"]);
+    });
+
+    it("skips toString", function() {
+      actual = I18n.t("greetings.name", {name: {first: "John", last: "Doe"}});
+      expect(actual).toEqual(["Hello ", {first: "John", last: "Doe"}, "!"]);
+    });
+
+    it("trims the array (no empty beginning or end)", function() {
+      actual = I18n.t("paid", {price: "$500"});
+      expect(actual).toEqual(["You were paid ", "$500"]);
+    });
   });
 });
