@@ -141,6 +141,9 @@
     // string is actually missing for testing purposes, you can prefix the
     // guessed string by setting the value here. By default, no prefix!
     , missingTranslationPrefix: ''
+
+    // 'inline' or 'split'
+    , interpolationMode: 'inline'
   };
 
   I18n.reset = function() {
@@ -170,6 +173,8 @@
     // Set the default missing string prefix for guess behaviour
     this.missingTranslationPrefix = DEFAULT_OPTIONS.missingTranslationPrefix;
 
+    // Set the default interpolation behaviour
+    this.interpolationMode = DEFAULT_OPTIONS.interpolationMode;
   };
 
   // Much like `reset`, but only assign options if not already assigned
@@ -191,12 +196,15 @@
 
     if (typeof(this.translations) === "undefined" && this.translations !== null)
       this.translations = DEFAULT_OPTIONS.translations;
-      
+
     if (typeof(this.missingBehaviour) === "undefined" && this.missingBehaviour !== null)
       this.missingBehaviour = DEFAULT_OPTIONS.missingBehaviour;
 
     if (typeof(this.missingTranslationPrefix) === "undefined" && this.missingTranslationPrefix !== null)
       this.missingTranslationPrefix = DEFAULT_OPTIONS.missingTranslationPrefix;
+
+    if (typeof(this.interpolationMode) === "undefined" && this.interpolationMode !== null)
+      this.interpolationMode = DEFAULT_OPTIONS.interpolationMode;
   };
   I18n.initializeOptions();
 
@@ -465,18 +473,23 @@
   // This function interpolates the all variables in the given message.
   I18n.interpolate = function(message, options) {
     options = this.prepareOptions(options);
-    var matches = message.match(this.placeholder)
-      , placeholder
-      , value
-      , name
-      , regex
-    ;
+    var matches = message.match(this.placeholder);
 
     if (!matches) {
       return message;
+    } else if (this.interpolationMode === 'split') {
+      return this.splitInterpolate(message, matches, options);
+    } else {
+      return this.inlineInterpolate(message, matches, options);
     }
+  };
 
-    var value;
+  // Not part of the public API
+  I18n.inlineInterpolate = function(message, matches, options) {
+    var value
+    , placeholder
+    , name
+    , regex;
 
     while (matches.length) {
       placeholder = matches.shift();
@@ -496,6 +509,63 @@
 
     return message.replace(/_#\$#_/g, "$");
   };
+
+  // Not part of the public API
+  I18n.splitInterpolate = function(message, matches, options) {
+    var value
+    , placeholder
+    , name
+    , regex;
+
+    var buffer = [message];
+
+    while (matches.length) {
+      placeholder = matches.shift();
+      name = placeholder.replace(this.placeholder, "$1");
+
+      if (this.isSet(options[name])) {
+        value = options[name];
+      } else if (name in options) {
+        value = this.nullPlaceholder(placeholder, message, options);
+      } else {
+        value = this.missingPlaceholder(placeholder, message, options);
+      }
+
+      buffer = buffer.reduce(function(memo, x) {
+        if (typeof x === "string") {
+          return memo.concat(this.splitReplace(x, placeholder, value));
+        } else {
+          return memo.concat([x]);
+        }
+      }.bind(this), []);
+    }
+
+    return buffer;
+  };
+
+  // Not part of the public API
+  I18n.splitReplace = function(str, delim, value) {
+    var delimRegex = delim.replace(/\{/gm, "\\{").replace(/\}/gm, "\\}");
+
+    // Wrap the delimiter in parentesis. This will split and keep the delimiter.
+    var regex = new RegExp("(" + delimRegex + ")");
+
+    return str.split(regex)
+      .filter(function(x) {
+        // Splitting will leave empty elements in between two delimiters.
+        // Remove them
+        return x !== "";
+      })
+      .map(function(x) {
+        // Replace the delimiter with value
+        if (x === delim) {
+          return value;
+        } else {
+          return x;
+        }
+      });
+  };
+
 
   // Pluralize the given scope using the `count` value.
   // The pluralized translation may have other placeholders,

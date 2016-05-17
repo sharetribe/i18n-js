@@ -110,4 +110,41 @@ describe("Interpolation", function(){
     expect(actual).toEqual("Hello [missing-placeholder-debug]!");
     I18n.missingPlaceholder = orig;
   });
+
+  describe("interpolationMode split", function() {
+    var origInterpolationMode;
+
+    beforeEach(function() {
+      var origInterpolationMode = I18n.interpolationMode;
+      I18n.interpolationMode = 'split';
+    });
+
+    afterEach(function() {
+      I18n.interpolationMode = origInterpolationMode;
+    });
+
+    it("splits the string by placeholders", function() {
+      actual = I18n.t("greetings.name", {name: "John Doe"});
+      expect(actual).toEqual(["Hello ", "John Doe", "!"]);
+    });
+
+    it("skips toString", function() {
+      actual = I18n.t("greetings.name", {name: {first: "John", last: "Doe"}});
+      expect(actual).toEqual(["Hello ", {first: "John", last: "Doe"}, "!"]);
+    });
+
+    it("trims the array (no empty beginning or end)", function() {
+      actual = I18n.t("paid", {price: "$500"});
+      expect(actual).toEqual(["You were paid ", "$500"]);
+    });
+
+    it("handles nested interpolations, does not flatten", function() {
+      actual = I18n.t("click_here.sentence", {
+        important: I18n.t("click_here.important", {
+          link: I18n.t("click_here.link", {this_uc: I18n.t("click_here.this_uc")})})
+      });
+
+      expect(actual).toEqual(["Click ", [["THIS", " link"], " to see more!"]]);
+    });
+  });
 });

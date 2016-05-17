@@ -343,6 +343,34 @@ I18n.t("some.missing.scope", {defaultValue: "A default message"});
 I18n.t("noun", {defaultValue: "I'm a {{noun}}", noun: "Mac"});
 ```
 
+There are two interpolation modes:
+
+`inline` mode (default): Replaces the placeholders from the original string with stringified values.
+
+```javascript
+I18n.interpolationMode = "inline";
+I18n.t("i_am_years_old", {age: 30}) // => "I'm 30 years old"
+```
+
+`split` mode: Splits the original string by placeholders and adds the values in the resulting array without stringifing them.
+
+```javascript
+I18n.interpolationMode = "split";
+I18n.t("i_am_years_old", {age: 30}) // => ["I'm ", 30, "years old"]
+```
+
+You might need to use the `split` if you need to inject HTML elements in the translations. This way, if you are using React, you can avoid using `setDangerouslyInnerHtml` function:
+
+```javascript
+# Translations
+// click_here_to_read_more: "Click %{here} to read more!"
+// click_here_link: "here"
+
+I18n.interpolationMode = "split";
+I18n.t("click_here_to_read_more", {link: a({href: "www.google.com"}, t("click_here_link"))})
+  // => ["Click " [object Object], " to read more!"]
+```
+
 You can also provide a list of default fallbacks for missing scopes:
 
 ```javascript
