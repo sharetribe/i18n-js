@@ -17,27 +17,13 @@ describe("Utility Functions", function(){
     });
   });
 
-  describe("I18n.interleaveValue", function() {
-    it("adds given value between each element in an array", function() {
-      expect(I18n.interleaveValue("a", [])).toEqual([]);
-      expect(I18n.interleaveValue("a", [1])).toEqual([1]);
-      expect(I18n.interleaveValue("a", [1, 2])).toEqual([1, "a", 2]);
-      expect(I18n.interleaveValue("a", [1, 2, 3])).toEqual([1, "a", 2, "a", 3]);
-    });
-  });
-
-  describe("I18n.trimArray", function() {
-    it("removes the unwanted values from the array beginning and end", function() {
-      expect(I18n.trimArray("", [])).toEqual([]);
-      expect(I18n.trimArray("", [1])).toEqual([1]);
-      expect(I18n.trimArray("", [1, 2])).toEqual([1, 2]);
-      expect(I18n.trimArray("", [1, 2, 3])).toEqual([1, 2, 3]);
-      expect(I18n.trimArray("", [""])).toEqual([]);
-      expect(I18n.trimArray("", ["", 1])).toEqual([1]);
-      expect(I18n.trimArray("", [1, ""])).toEqual([1]);
-      expect(I18n.trimArray("", ["", 1, 2])).toEqual([1, 2]);
-      expect(I18n.trimArray("", [1, 2, ""])).toEqual([1, 2]);
-      expect(I18n.trimArray("", [1, "", 2])).toEqual([1, "", 2]);
+  describe("I18n.splitReplace", function() {
+    it("replaces the placeholder with value and splits the string by the placeholders", function() {
+      var delimiter = "{{name}}";
+      expect(I18n.splitReplace("Name: {{name}}", delimiter, "John")).toEqual(["Name: ", "John"]);
+      expect(I18n.splitReplace("Name: {{name}}, nickname: {{name}}", delimiter, "John")).toEqual(["Name: ", "John", ", nickname: ", "John"]);
+      expect(I18n.splitReplace("Name twice: {{name}} {{name}}", delimiter, "John")).toEqual(["Name twice: ", "John", " ", "John"]);
+      expect(I18n.splitReplace("Name twice no space: {{name}}{{name}}", delimiter, "John")).toEqual(["Name twice no space: ", "John", "John"]);
     });
   });
 });

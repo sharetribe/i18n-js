@@ -473,29 +473,30 @@
   // This function interpolates the all variables in the given message.
   I18n.interpolate = function(message, options) {
     options = this.prepareOptions(options);
-    var matches = message.match(this.placeholder)
-      , placeholder
-      , value
-      , name
-      , regex
-    ;
+    var matches = message.match(this.placeholder);
 
     if (!matches) {
       return message;
+    } else if (this.interpolationMode === 'split') {
+      return this.splitInterpolate(message, matches, options);
+    } else {
+      return this.inlineInterpolate(message, matches, options);
     }
+  };
 
-    var value;
+  // Not part of the public API
+  I18n.inlineInterpolate = function(message, matches, options) {
+    var value
+    , placeholder
+    , name
+    , regex;
 
     while (matches.length) {
       placeholder = matches.shift();
       name = placeholder.replace(this.placeholder, "$1");
 
       if (this.isSet(options[name])) {
-        if (this.interpolationMode === 'split') {
-          value = options[name];
-        } else {
-          value = options[name].toString().replace(/\$/gm, "_#$#_");
-        }
+        value = options[name].toString().replace(/\$/gm, "_#$#_");
       } else if (name in options) {
         value = this.nullPlaceholder(placeholder, message, options);
       } else {
@@ -503,40 +504,68 @@
       }
 
       regex = new RegExp(placeholder.replace(/\{/gm, "\\{").replace(/\}/gm, "\\}"));
-
-      if (this.interpolationMode === 'split') {
-        message = isArray(message) ? message : [message];
-
-        message = message.reduce(function(memo, x) {
-          if (typeof x === "string") {
-            // 1. Splits the string by placeholder
-            // 2. Interleaves the give value to the array
-            // 3. Trims the array
-            //
-            // E.g. when x = "hello {{name}}" and value = "John":
-            //
-            // 1. Split:      "hello {{name}}" => ["hello ", ""]
-            // 2. Interleave: ["hello ", ""] => ["hello ", "John", ""]
-            // 3. Trim:       ["hello ", "John", ""] => ["hello ", "John"]
-            //
-            var interpolated = this.trimArray("", this.interleaveValue(value, x.split(regex)));
-
-            return memo.concat(interpolated);
-          } else {
-            return memo.concat([x]);
-          }
-        }.bind(this), []);
-      } else {
-        message = message.replace(regex, value);
-      }
+      message = message.replace(regex, value);
     }
 
-    if (this.interpolationMode === 'split') {
-      return message;
-    } else {
-      return message.replace(/_#\$#_/g, "$");
-    }
+    return message.replace(/_#\$#_/g, "$");
   };
+
+  // Not part of the public API
+  I18n.splitInterpolate = function(message, matches, options) {
+    var value
+    , placeholder
+    , name
+    , regex;
+
+    var buffer = [message];
+
+    while (matches.length) {
+      placeholder = matches.shift();
+      name = placeholder.replace(this.placeholder, "$1");
+
+      if (this.isSet(options[name])) {
+        value = options[name];
+      } else if (name in options) {
+        value = this.nullPlaceholder(placeholder, message, options);
+      } else {
+        value = this.missingPlaceholder(placeholder, message, options);
+      }
+
+      buffer = buffer.reduce(function(memo, x) {
+        if (typeof x === "string") {
+          return memo.concat(this.splitReplace(x, placeholder, value));
+        } else {
+          return memo.concat([x]);
+        }
+      }.bind(this), []);
+    }
+
+    return buffer;
+  };
+
+  // Not part of the public API
+  I18n.splitReplace = function(str, delim, value) {
+    var delimRegex = delim.replace(/\{/gm, "\\{").replace(/\}/gm, "\\}");
+
+    // Wrap the delimiter in parentesis. This will split and keep the delimiter.
+    var regex = new RegExp("(" + delimRegex + ")");
+
+    return str.split(regex)
+      .filter(function(x) {
+        // Splitting will leave empty elements in between two delimiters.
+        // Remove them
+        return x !== "";
+      })
+      .map(function(x) {
+        // Replace the delimiter with value
+        if (x === delim) {
+          return value;
+        } else {
+          return x;
+        }
+      });
+  };
+
 
   // Pluralize the given scope using the `count` value.
   // The pluralized translation may have other placeholders,
@@ -974,47 +1003,6 @@
       }
     }
     return extended;
-  };
-
-  // Takes an array and adds the given value between each element.
-  //
-  // Examples:
-  // interleaveValue("a", []) => []
-  // interleaveValue("a", [1]) => [1]
-  // interleaveValue("a", [1, 2]) => [1, "a", 2]
-  // interleaveValue("a", [1, 2, 3]) => [1, "a", 2, "a", 3]
-  //
-  // This function is not part of the public API
-  //
-  I18n.interleaveValue = function ( value, arr ) {
-    var first = arr.slice(0, 1); // first element in an array, or empty array
-    var rest = arr.slice(1); // rest in an array
-
-    if (rest.length) {
-      return rest.reduce(function(xs, x) {
-        return xs.concat([value, x]);
-      }, first);
-    } else {
-      return first;
-    }
-  };
-
-  // Trims array, i.e. removes unwanted value from the beginning and end
-  //
-  // Example:
-  // var splitted = "My name is ${name}".split("${name}"); => ["My name is ", ""];
-  // I18n.trimArray("", splitted); => ["My name is "];
-  I18n.trimArray = function ( unwantedValue, arr ) {
-    if (arr.length === 0) {
-      return arr;
-    } else if (arr.length === 1) {
-      return (arr[0] === unwantedValue) ? arr.slice(1) : arr.slice();
-    } else {
-      var start = (arr[0] === unwantedValue) ? 1 : 0;
-      var end = (arr[arr.length - 1] === unwantedValue) ? -1 : undefined;
-
-      return arr.slice(start, end);
-    }
   };
 
   // Set aliases, so we can save some typing.
